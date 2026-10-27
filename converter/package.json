@@ -1,0 +1,6 @@
+{
+  "name": "mouse-calc-converter",
+  "private": true,
+  "description": "Mouse Calc <-> xlsx/csv converter (build with build_page.py, test with test/run.sh)",
+  "dependencies": { "xlsx": "0.18.5" }
+}

@@ -1,0 +1,12 @@
+diff --git a/js/main2e.ts b/js/main2e.ts
+index 7957dd7..1cb844e 100644
+--- a/js/main2e.ts
++++ b/js/main2e.ts
+@@ -78,6 +78,7 @@ apple2.ready
+         io.setSlot(5, clock);
+         io.setSlot(6, disk2);
+         io.setSlot(7, smartport);
++        (window as any).__sp = smartport; (window as any).__a2 = apple2; (window as any).__cpu = cpu;
+ 
+         initUI(apple2, disk2, smartport, printer, options.e, keyboardLayout);
+     })
