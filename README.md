@@ -36,13 +36,17 @@ More detail: [Sorting](docs/SORT.md) · [CSV](docs/CSV.md) · [Hard disk & DeskT
 
 ---
 
+## Getting Version 2
+
+Mouse Calc itself is still copyrighted, so this project can't hand out finished disks. Instead it turns **your own copy** of the original disks into Version 2 in one step — download this repository (green **Code → Download ZIP** button, or the latest [release](../../releases)), add your disk images, run one command.
+
 ## Building
 
 You need:
 
 * your own image of the **Mouse Calc program disk** (`.woz`, `.po` or `.dsk`) — and ideally the **samples disk**, which adds the extra printer drivers, the sample sheets and the PC converter's examples;
-* **Python 3.8+**;
-* **cc65** (`ca65`/`ld65`) — `sudo apt install cc65`, `brew install cc65`, or a [release build](https://cc65.github.io/);
+* **Python 3.8+** — that's all;
+* optional: **cc65** (`ca65`/`ld65`) to re-assemble the 6502 code yourself — without it the build uses the ready-assembled copies in [`prebuilt/`](prebuilt/) (`sudo apt install cc65`, `brew install cc65`);
 * optional: **Node.js**, to generate the `SORT.DEMO` practice sheet.
 
 ```sh
@@ -76,6 +80,7 @@ Same as the original Mouse Calc: a 128K Apple IIe, IIc or IIgs with a mouse. The
 ```
 build.py            one-step build from your original disks
 src/                6502 assembly (ca65): Sort, CSV, launchers, small patches
+prebuilt/           the same, assembled (used when cc65 isn't installed)
 patch/              patch_mousecalc.py (all byte patches, each verified), splash_patch.py
 help/               generators for the new help pages
 demo/               SORT.DEMO generator

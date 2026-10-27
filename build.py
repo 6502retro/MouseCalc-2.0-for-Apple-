@@ -8,7 +8,9 @@ Inputs (not included in this repository - see originals/README.md):
     Mouse Calc program disk  (.woz, .po or .dsk)  - required
     Mouse Calc samples disk  (.woz, .po or .dsk)  - optional but recommended
                                (extra printer drivers, sample sheets, converter)
-Needs: Python 3, cc65 (ca65 + ld65). Node.js is optional (builds SORT.DEMO).
+Needs: Python 3. cc65 (ca65 + ld65) is optional: without it the assembled
+pieces in prebuilt/ are used (--prebuilt forces that, --update-prebuilt
+refreshes them from src/). Node.js is optional (builds SORT.DEMO).
 
 Outputs in out/:
     MouseCalc_HDD.po / .2mg        32 MB ProDOS hard disk, /MCALC/MOUSECALC/...
@@ -72,23 +74,47 @@ def tree(vol, key):
 byname = lambda L, n: next((x for x in L if x.name == n), None)
 
 # ---------------------------------------------------------------- assembler
-def tool(name):
+PREBUILT = os.path.join(ROOT, 'prebuilt')
+
+def tool(name, required=True):
     for p in [os.environ.get('CC65_HOME', '') + '/bin/' + name, shutil.which(name) or '']:
         if p and os.path.exists(p): return p
-    die('%s not found - install cc65 (e.g. "apt install cc65" or "brew install cc65")' % name)
+    if required: die('%s not found - install cc65 (e.g. "apt install cc65" or "brew install cc65")' % name)
+    return None
 
+USE_PREBUILT = False
 def assemble(src, cfg, out, trim=False):
+    """assemble src/<src> with cc65, or - without cc65 - take the copy in prebuilt/
+    (M.SYSTEM's prebuilt copy is only the new front part; Version Soft's original
+    loader is appended from your disk)"""
+    name = os.path.basename(out)
+    if USE_PREBUILT:
+        if name == 'M.SYSTEM':
+            d = open(os.path.join(PREBUILT, 'M.SYSTEM.front'), 'rb').read() + open(os.path.join(BUILD, 'msys_body.bin'), 'rb').read()
+        else:
+            d = open(os.path.join(PREBUILT, name), 'rb').read()
+        open(out, 'wb').write(d); return d
     obj = os.path.join(BUILD, os.path.basename(src) + '.o')
     subprocess.run([tool('ca65'), '-I', BUILD, '--bin-include-dir', BUILD, '-o', obj, '-l', obj[:-2] + '.lst',
                     os.path.join(ROOT, 'src', src)], check=True)
     subprocess.run([tool('ld65'), '-C', os.path.join(ROOT, 'src', cfg), '-o', out, obj], check=True)
     if trim:                                    # drop zero fill after the last code byte
         d = open(out, 'rb').read(); open(out, 'wb').write(d[:len(d.rstrip(b'\0')) + 1])
-    return open(out, 'rb').read()
+    d = open(out, 'rb').read()
+    if UPDATE_PREBUILT:
+        os.makedirs(PREBUILT, exist_ok=True)
+        if name == 'M.SYSTEM': open(os.path.join(PREBUILT, 'M.SYSTEM.front'), 'wb').write(d[:-256])
+        else: open(os.path.join(PREBUILT, name), 'wb').write(d)
+    return d
+UPDATE_PREBUILT = False
 
 # ---------------------------------------------------------------- main
 def main():
-    prog_path, samp_path = find_inputs(sys.argv)
+    global USE_PREBUILT, UPDATE_PREBUILT
+    args = [a for a in sys.argv if not a.startswith('--')]
+    UPDATE_PREBUILT = '--update-prebuilt' in sys.argv
+    USE_PREBUILT = '--prebuilt' in sys.argv or (not UPDATE_PREBUILT and not tool('ca65', False))
+    prog_path, samp_path = find_inputs(args)
     shutil.rmtree(BUILD, ignore_errors=True); os.makedirs(BUILD)
     os.makedirs(os.path.join(OUT, 'files'), exist_ok=True)
 
@@ -105,7 +131,7 @@ def main():
     sha = hashlib.sha1(orig.data).hexdigest()
     print('    MOUSE.CALC sha1', sha)
 
-    step('assembling (ca65)')
+    step('using prebuilt/ (cc65 not found)' if USE_PREBUILT else 'assembling (ca65)')
     open(os.path.join(BUILD, 'msys_body.bin'), 'wb').write((msys.data[0x0E:] + bytes(256))[:256])
     sortseg = assemble('sort.s', 'sort.cfg', os.path.join(BUILD, 'SORT.SEGMENT'))
     assemble('sortstub.s', 'sortstub.cfg', os.path.join(BUILD, 'sortstub.bin'))
