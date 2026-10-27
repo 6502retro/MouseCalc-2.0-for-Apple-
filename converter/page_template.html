@@ -1,0 +1,509 @@
+<meta charset="utf-8">
+<title>Mouse Calc Converter</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;500;600&family=Silkscreen&display=swap">
+<style>
+/* Layout: a two-way workbench — header with mode switch, then a source panel (files) beside a sheet preview; stacks on phones. */
+:root {
+  --bg: #e9e8e3;          /* Apple IIc platinum */
+  --panel: #f6f5f1;
+  --ink: #1d2230;
+  --muted: #5d6475;
+  --line: #c9c7bf;
+  --accent: #2741c9;      /* MouseText selection blue */
+  --accent-ink: #ffffff;
+  --accent-soft: #dfe3fb;
+  --grid: #d9d7cf;
+  --cell: #ffffff;
+  --head: #eceae4;
+  --warn: #8a5a00;
+  --warn-soft: #fbefd2;
+  --ok: #1f6b3a;
+  --ok-soft: #dcefe2;
+  --font-display: "Silkscreen", "IBM Plex Mono", ui-monospace, monospace;
+  --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --r: 6px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #15171d; --panel: #1d2028; --ink: #e7e8ec; --muted: #9aa1b2; --line: #343947; --accent: #7c8cff; --accent-ink: #0d1020;
+  --accent-soft: #262c4d; --grid: #2b2f3a; --cell: #181a21; --head: #22252e; --warn: #f0c060; --warn-soft: #3a2f16; --ok: #7fd49a; --ok-soft: #173023; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #15171d; --panel: #1d2028; --ink: #e7e8ec; --muted: #9aa1b2; --line: #343947; --accent: #7c8cff; --accent-ink: #0d1020;
+  --accent-soft: #262c4d; --grid: #2b2f3a; --cell: #181a21; --head: #22252e; --warn: #f0c060; --warn-soft: #3a2f16; --ok: #7fd49a; --ok-soft: #173023; color-scheme: dark }
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 48px; display: grid; gap: 18px; }
+header.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; border-bottom: 2px solid var(--ink); padding-bottom: 12px; }
+.brand h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(22px, 3.4vw, 32px); letter-spacing: .02em; margin: 0; line-height: 1.1; text-wrap: balance; }
+.brand p { margin: 4px 0 0; color: var(--muted); max-width: 62ch; }
+.privacy { font-size: 13px; color: var(--muted); text-align: right; }
+.privacy b { color: var(--ink); }
+
+.modes { display: inline-flex; border: 1.5px solid var(--ink); border-radius: var(--r); overflow: hidden; }
+.modes button { font: 600 14px var(--font-body); padding: 9px 16px; border: 0; background: var(--panel); color: var(--ink); cursor: pointer; }
+.modes button + button { border-left: 1.5px solid var(--ink); }
+.modes button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
+.modes button:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible, label.drop:focus-within { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.work { display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 860px) { .work { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 14px; min-width: 0; }
+.panel h2 { font: 700 13px var(--font-body); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0; }
+.step { display: grid; gap: 8px; min-width: 0; }
+
+label.drop { display: grid; place-items: center; text-align: center; gap: 4px; border: 2px dashed var(--line); border-radius: var(--r); padding: 18px 12px; cursor: pointer; background: var(--cell); transition: border-color .15s, background .15s; }
+label.drop:hover, label.drop.over { border-color: var(--accent); background: var(--accent-soft); }
+label.drop strong { font-size: 15px; }
+label.drop span { font-size: 13px; color: var(--muted); }
+label.drop input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+.filelist { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 340px; overflow: auto; border: 1px solid var(--line); border-radius: var(--r); background: var(--cell); }
+.filelist button { width: 100%; text-align: left; display: flex; justify-content: space-between; gap: 8px; font: 14px var(--font-mono); padding: 6px 10px; background: transparent; color: var(--ink); border: 0; cursor: pointer; }
+.filelist button:hover { background: var(--accent-soft); }
+.filelist button[aria-current="true"] { background: var(--accent); color: var(--accent-ink); }
+.filelist small { color: inherit; opacity: .7; font-size: 12px; white-space: nowrap; }
+.filelist .folder { padding: 6px 10px 2px; font: 600 11px var(--font-body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+
+.src-title { font: 600 14px var(--font-mono); word-break: break-all; }
+.tag { display: inline-block; font: 600 11px var(--font-body); letter-spacing: .06em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); vertical-align: middle; }
+.tag.example { background: var(--warn-soft); color: var(--warn); }
+
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { font: 600 14px var(--font-body); padding: 9px 14px; border-radius: var(--r); border: 1.5px solid var(--ink); background: var(--cell); color: var(--ink); cursor: pointer; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn:not(:disabled):hover { filter: brightness(1.05); transform: translateY(-1px); }
+@media (prefers-reduced-motion: reduce) { .btn:not(:disabled):hover { transform: none; } label.drop { transition: none; } }
+
+.field { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.field input[type=text], .field select { font: 15px var(--font-mono); padding: 7px 9px; border-radius: var(--r); border: 1.5px solid var(--line); background: var(--cell); color: var(--ink); width: 100%; min-width: 0; }
+.check { display: flex; gap: 8px; align-items: center; font-size: 14px; }
+.hint { font-size: 13px; color: var(--muted); margin: 0; }
+
+.sheetcard { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); min-width: 0; display: grid; }
+.sheethead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.sheethead .stats { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.fbar { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; padding: 10px 14px; border-bottom: 1px solid var(--line); font: 13px var(--font-mono); background: var(--cell); min-height: 64px; align-content: center; }
+.fbar .k { color: var(--muted); font-family: var(--font-body); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; align-self: center; }
+.fbar .v { overflow-wrap: anywhere; }
+.gridwrap { overflow: auto; max-height: 560px; background: var(--cell); border-radius: 0 0 var(--r) var(--r); }
+table.mc { border-collapse: separate; border-spacing: 0; font: 13px/1.25 var(--font-mono); font-variant-numeric: tabular-nums; }
+table.mc th { position: sticky; background: var(--head); color: var(--muted); font-weight: 500; font-size: 12px; z-index: 1; border-right: 1px solid var(--grid); border-bottom: 1px solid var(--grid); padding: 2px 6px; }
+table.mc thead th { top: 0; }
+table.mc tbody th { left: 0; text-align: right; z-index: 2; }
+table.mc thead th:first-child { left: 0; z-index: 3; }
+table.mc td { border-right: 1px solid var(--grid); border-bottom: 1px solid var(--grid); padding: 2px 6px; white-space: pre; overflow: hidden; text-overflow: clip; max-width: 0; cursor: default; }
+table.mc td.num { text-align: right; }
+table.mc td.left { text-align: left; } table.mc td.right { text-align: right; } table.mc td.center { text-align: center; }
+table.mc td.f { color: var(--accent); }
+table.mc td.err { color: var(--warn); }
+table.mc td.sel { outline: 2px solid var(--accent); outline-offset: -2px; background: var(--accent-soft); }
+
+.notes { display: grid; gap: 6px; padding: 12px 14px; border-top: 1px solid var(--line); font-size: 13px; }
+.note { padding: 8px 10px; border-radius: var(--r); background: var(--warn-soft); color: var(--warn); overflow-wrap: anywhere; }
+.note.ok { background: var(--ok-soft); color: var(--ok); }
+.note ul { margin: 4px 0 0; padding-left: 18px; max-height: 160px; overflow: auto; }
+
+.translator { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 10px; }
+.translator h2 { font: 700 13px var(--font-body); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0; }
+.tr-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.tr-out { font: 15px var(--font-mono); background: var(--cell); border: 1px solid var(--line); border-radius: var(--r); padding: 8px 10px; min-height: 40px; overflow-wrap: anywhere; }
+.tr-out small { display: block; font: 12px var(--font-body); color: var(--muted); margin-bottom: 2px; }
+
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: var(--r); font-size: 14px; max-width: calc(100% - 32px); z-index: 20; }
+details.help { font-size: 14px; color: var(--muted); }
+details.help summary { cursor: pointer; color: var(--ink); font-weight: 600; }
+details.help p, details.help ul { margin: 6px 0; max-width: 75ch; }
+code { font-family: var(--font-mono); font-size: .92em; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Mouse Calc Converter</h1>
+      <p>Move spreadsheets between Mouse Calc 1.1 (Version Soft, 1984) on the Apple II and Excel, Numbers, LibreOffice or Google Sheets.</p>
+    </div>
+    <div style="display:grid;gap:8px;justify-items:end">
+      <div class="modes" role="tablist" aria-label="Direction">
+        <button id="mode-export" role="tab" aria-selected="true">Apple II → PC</button>
+        <button id="mode-import" role="tab" aria-selected="false">PC → Apple II</button>
+      </div>
+      <div class="privacy">Files are read and written <b>in your browser</b>; nothing is uploaded.</div>
+    </div>
+  </header>
+
+  <!-- ================= EXPORT ================= -->
+  <section id="view-export" class="work">
+    <div class="panel">
+      <div class="step">
+        <h2>1 · Open</h2>
+        <label class="drop" id="drop-export">
+          <input type="file" id="in-export" accept=".po,.2mg,.2img,.hdv,.dsk,.do,.woz,*/*" multiple>
+          <strong>Drop a disk image or Mouse Calc file</strong>
+          <span>.po · .2mg · .hdv · .dsk · .woz, or a file copied off a disk (e.g. <code>BUDGET#f80000</code>)</span>
+        </label>
+      </div>
+      <div class="step">
+        <h2>2 · Pick a sheet</h2>
+        <div id="src-title" class="src-title"></div>
+        <ul class="filelist" id="filelist"></ul>
+      </div>
+      <div class="step">
+        <h2>3 · Save</h2>
+        <div class="btns">
+          <button class="btn primary" id="btn-xlsx">Excel (.xlsx)</button>
+          <button class="btn" id="btn-csv">CSV</button>
+        </div>
+        <button class="btn" id="btn-all">All sheets in one workbook</button>
+        <p class="hint">Formulas stay live in Excel. Mouse Calc works strictly left to right (<code>2+3*4</code> is 20), so brackets are added to keep every result the same.</p>
+      </div>
+    </div>
+    <div class="sheetcard" id="sheet-export"></div>
+  </section>
+
+  <!-- ================= IMPORT ================= -->
+  <section id="view-import" class="work" hidden>
+    <div class="panel">
+      <div class="step">
+        <h2>1 · Open a spreadsheet</h2>
+        <label class="drop" id="drop-import">
+          <input type="file" id="in-import" accept=".xlsx,.xlsm,.xls,.ods,.csv,.tsv,.numbers">
+          <strong>Drop an Excel, ODS or CSV file</strong>
+          <span>.xlsx · .xls · .ods · .csv</span>
+        </label>
+        <div class="field" id="sheetpick-wrap" hidden><label for="sheetpick">Sheet</label><select id="sheetpick"></select></div>
+      </div>
+      <div class="step">
+        <h2>2 · Name it</h2>
+        <div class="field"><label for="pname">ProDOS file name (up to 15 letters, digits, dots)</label><input type="text" id="pname" maxlength="15" autocomplete="off" spellcheck="false"></div>
+      </div>
+      <div class="step">
+        <h2>3 · Save</h2>
+        <button class="btn primary" id="btn-mcfile">Mouse Calc file (.zip)</button>
+        <p class="hint">Contains <code>NAME#f80000</code>; CiderPress II reads the <code>#f80000</code> ending as ProDOS type $F8, the Mouse Calc file type.</p>
+        <div class="field"><label>Or put it straight onto a disk image</label></div>
+        <label class="drop" id="drop-disk" style="padding:12px">
+          <input type="file" id="in-disk" accept=".po,.2mg,.2img,.hdv,.dsk,.do,.woz">
+          <strong id="disk-label">Choose a disk image</strong>
+          <span>.po · .2mg · .hdv · .dsk (a .woz is saved back as .po)</span>
+        </label>
+        <div class="field" id="folder-wrap" hidden><label for="folder">Folder</label><select id="folder"></select></div>
+        <label class="check" id="replace-wrap" hidden><input type="checkbox" id="replace"> Replace a file with the same name</label>
+        <button class="btn" id="btn-disk" disabled>Save updated disk image (.zip)</button>
+      </div>
+    </div>
+    <div class="sheetcard" id="sheet-import"></div>
+  </section>
+
+  <section class="translator" aria-labelledby="tr-h">
+    <h2 id="tr-h">Formula translator</h2>
+    <div class="tr-row">
+      <div class="field"><label for="tr-in">Excel formula</label><input type="text" id="tr-in" value="=2+3*4^2-10/5" spellcheck="false" autocomplete="off"></div>
+      <div class="tr-out" id="tr-mc"></div>
+      <div class="tr-out" id="tr-back"></div>
+    </div>
+  </section>
+
+  <details class="help">
+    <summary>How to get files on and off your Apple II disks</summary>
+    <ul>
+      <li><b>Easiest:</b> open your hard-drive or floppy image here directly. On the PC → Apple II side, choose the same image under step 3 and pick a folder; you get back an updated copy of the image to put in place of the old one (keep a backup).</li>
+      <li><b>One file at a time:</b> CiderPress II can extract a Mouse Calc file (keep the <code>#f80000</code> ending) or add the file from the .zip this page makes.</li>
+      <li>Mouse Calc sheets are up to 62 columns (A–BJ) by 254 rows. Mouse Calc has no text formulas, dates or VLOOKUP, so those cells arrive as their current values, and the page tells you which ones.</li>
+      <li>Some Mouse Calc templates refer to themselves (random numbers, population steps). In Excel these are circular references; the workbook turns on one-pass iteration so they behave the same way.</li>
+    </ul>
+  </details>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+/*MCLIB*/
+</script>
+<script>
+/*MCXLSX*/
+</script>
+<script>
+/*MCIMPORT*/
+</script>
+<script>
+(function () {
+'use strict';
+const M = window.MCLib, X = window.MCXlsx, I = window.MCImport;
+const $ = id => document.getElementById(id);
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const EXAMPLES = /*EXAMPLES*/;
+M.setTemplateHeader(b64(EXAMPLES['SAMPLE.BILL']));
+
+// ---------- downloads (claude.ai viewer capability, or a normal browser download when opened as a file)
+const dlP = (window.claude && typeof window.claude.use === 'function') ? window.claude.use('downloads') : Promise.resolve(undefined);
+async function offer(filename, data) {
+  const dl = await dlP;
+  if (dl === undefined) {
+    const url = URL.createObjectURL(data instanceof Blob ? data : new Blob([data]));
+    const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000); toast('Saved ' + filename); return;
+  }
+  if (!dl) { toast('Saving files is not available in this view. Open the page in claude.ai or as a downloaded file.'); return; }
+  try { await dl.save({ filename, data: data instanceof Blob ? data : new Blob([data]) }); toast('Saved ' + filename); }
+  catch (e) { toast(e && e.code === 'declined' ? 'Save cancelled' : 'Could not save: ' + ((e && e.message) || 'unknown problem')); }
+}
+let toastT;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 4200); }
+
+// ---------- modes
+function setMode(m) {
+  $('mode-export').setAttribute('aria-selected', m === 'export'); $('mode-import').setAttribute('aria-selected', m === 'import');
+  $('view-export').hidden = m !== 'export'; $('view-import').hidden = m !== 'import';
+  try { localStorage.setItem('mc-mode', m); } catch (e) {}
+}
+$('mode-export').onclick = () => setMode('export'); $('mode-import').onclick = () => setMode('import');
+try { const m = localStorage.getItem('mc-mode'); if (m === 'import') setMode('import'); } catch (e) {}
+
+// ---------- drag and drop
+function dropzone(labelId, inputId, handler) {
+  const L = $(labelId), inp = $(inputId);
+  inp.addEventListener('change', () => { if (inp.files.length) handler([...inp.files]); inp.value = ''; });
+  ['dragenter', 'dragover'].forEach(ev => L.addEventListener(ev, e => { e.preventDefault(); L.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(ev => L.addEventListener(ev, e => { e.preventDefault(); L.classList.remove('over'); }));
+  L.addEventListener('drop', e => { if (e.dataTransfer.files.length) handler([...e.dataTransfer.files]); });
+}
+const readBytes = f => f.arrayBuffer().then(b => new Uint8Array(b));
+
+// ---------- value formatting as Mouse Calc shows it
+function fmtNumber(v, fmt) {
+  if (typeof v === 'boolean') return v ? 'TRUE' : 'FALSE';
+  if (v && typeof v === 'object') return v.error === 'NA' ? 'NA' : 'ERROR';
+  const comma = (x, d) => { const s = Math.abs(x).toFixed(d); const [i, f] = s.split('.'); return i.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (f ? '.' + f : ''); };
+  const neg = v < 0 ? '-' : '';
+  switch (fmt) {
+    case 2: return String(Math.round(v));
+    case 5: return neg + comma(v, 2);
+    case 6: return neg + '$' + comma(v, 0);
+    case 7: return neg + comma(v, 0);
+    case 8: return neg + '$' + comma(v, 2);
+    case 9: case 10: case 11: case 12: case 13: case 14: return v.toFixed(fmt - 8);
+    default: { let s = String(+v.toPrecision(10)); if (s.startsWith('0.')) s = s.slice(1); else if (s.startsWith('-0.')) s = '-' + s.slice(2); return s; }
+  }
+}
+const alignClass = f => ({ 3: 'left', 4: 'right', 15: 'center' })[f] || '';
+
+// ---------- sheet preview
+function renderSheet(host, title, tagHtml, sheet, notesHtml) {
+  host.innerHTML = '';
+  const cells = sheet.cells;
+  let usedR = 1, usedC = 1; cells.forEach(c => { usedR = Math.max(usedR, c.r); usedC = Math.max(usedC, c.c); });
+  const maxR = Math.min(usedR + 1, M.MAX_ROW), maxC = Math.min(usedC + 1, M.MAX_COL);
+  const nf = cells.filter(c => c.kind === 'formula').length;
+  const head = document.createElement('div'); head.className = 'sheethead';
+  head.innerHTML = '<div class="src-title">' + esc(title) + ' ' + (tagHtml || '') + '</div><div class="stats">' + cells.length + ' cells · ' + nf + ' formulas · used area A1:' + M.cellName(usedR, usedC) + '</div>';
+  const bar = document.createElement('div'); bar.className = 'fbar';
+  bar.innerHTML = '<span class="k">Cell</span><span class="v">Click a cell to see its contents and formula.</span>';
+  const wrap = document.createElement('div'); wrap.className = 'gridwrap';
+  const map = new Map(); cells.forEach(c => map.set(c.r * 256 + c.c, c));
+  const t = document.createElement('table'); t.className = 'mc';
+  const colW = c => ((sheet.widths && sheet.widths[c]) || M.DEFAULT_WIDTH);
+  let h = '<thead><tr><th></th>';
+  for (let c = 1; c <= maxC; c++) h += '<th style="width:' + (colW(c) + 1.5) + 'ch;min-width:' + (colW(c) + 1.5) + 'ch">' + M.colName(c) + '</th>';
+  h += '</tr></thead><tbody>';
+  for (let r = 1; r <= maxR; r++) {
+    h += '<tr><th>' + r + '</th>';
+    for (let c = 1; c <= maxC; c++) {
+      const x = map.get(r * 256 + c);
+      if (!x) { h += '<td></td>'; continue; }
+      let txt, cls = [];
+      if (x.kind === 'text') { txt = x.fmt === 1 && x.text ? x.text.repeat(Math.ceil(colW(c) / x.text.length)).slice(0, colW(c)) : x.text; }
+      else { txt = fmtNumber(x.value, x.fmt); cls.push('num'); if (x.kind === 'formula') cls.push('f'); if (x.value && typeof x.value === 'object') cls.push('err'); }
+      const a = alignClass(x.fmt); if (a) cls.push(a);
+      h += '<td data-k="' + (r * 256 + c) + '" class="' + cls.join(' ') + '">' + esc(txt) + '</td>';
+    }
+    h += '</tr>';
+  }
+  t.innerHTML = h + '</tbody>';
+  let selTd = null;
+  t.addEventListener('click', e => {
+    const td = e.target.closest('td[data-k]'); if (!td) return;
+    if (selTd) selTd.classList.remove('sel'); selTd = td; td.classList.add('sel');
+    const x = map.get(+td.dataset.k), ref = M.cellName(x.r, x.c);
+    let rows = '<span class="k">' + ref + '</span><span class="v">';
+    if (x.kind === 'text') rows += esc(JSON.stringify(x.text)) + ' · text' + (x.fmt ? ' · ' + M.FORMATS[x.fmt] : '');
+    else rows += esc(fmtNumber(x.value, 0)) + (x.fmt ? ' · ' + M.FORMATS[x.fmt] : '');
+    rows += '</span>';
+    if (x.kind === 'formula') {
+      rows += '<span class="k">Mouse Calc</span><span class="v">' + esc(x.mc || '(unreadable)') + '</span>';
+      rows += '<span class="k">Excel</span><span class="v">' + esc(x.excel ? '=' + x.excel : '(kept as value)') + '</span>';
+    }
+    bar.innerHTML = rows;
+  });
+  wrap.appendChild(t);
+  host.append(head, bar, wrap);
+  if (notesHtml) { const n = document.createElement('div'); n.className = 'notes'; n.innerHTML = notesHtml; host.appendChild(n); }
+}
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+// =============== EXPORT SIDE ===============
+const ex = { source: null, items: [], current: null, isExample: true };
+function sheetNotes(sheet) {
+  const notes = [];
+  const cyc = M.circularCells(sheet);
+  if (cyc.size) notes.push('<div class="note">' + cyc.size + ' formula cell(s) refer back to themselves (' + [...cyc].slice(0, 6).map(k => M.cellName(k >> 8, k & 255)).join(', ') + (cyc.size > 6 ? '…' : '') + '). The workbook switches on one-pass iteration so they recalculate the way Mouse Calc does.</div>');
+  const bad = sheet.cells.filter(c => c.parseError);
+  if (bad.length) notes.push('<div class="note">' + bad.length + ' formula(s) could not be read and are exported as values: ' + bad.slice(0, 8).map(c => M.cellName(c.r, c.c)).join(', ') + '</div>');
+  return notes.join('');
+}
+function showExportList() {
+  const L = $('filelist'); L.innerHTML = '';
+  $('src-title').innerHTML = esc(ex.source) + (ex.isExample ? ' <span class="tag example">example</span>' : '');
+  let lastFolder = null;
+  ex.items.forEach((it, i) => {
+    const folder = it.path.includes('/') ? it.path.slice(0, it.path.lastIndexOf('/')) : '';
+    if (folder !== lastFolder && ex.items.some(x => x.path.includes('/'))) { const f = document.createElement('li'); f.className = 'folder'; f.textContent = folder ? '/' + folder : 'Top level'; L.appendChild(f); lastFolder = folder; }
+    const li = document.createElement('li'), b = document.createElement('button');
+    b.innerHTML = '<span>' + esc(it.path.split('/').pop()) + '</span><small>' + it.sheet.cells.length + ' cells</small>';
+    b.setAttribute('aria-current', i === ex.current);
+    b.onclick = () => { ex.current = i; showExportList(); showExportSheet(); };
+    li.appendChild(b); L.appendChild(li);
+  });
+  if (!ex.items.length) L.innerHTML = '<li class="folder">No Mouse Calc sheets found</li>';
+  ['btn-xlsx', 'btn-csv'].forEach(id => $(id).disabled = ex.current === null);
+  $('btn-all').disabled = ex.items.length < 2;
+}
+function showExportSheet() {
+  const it = ex.items[ex.current];
+  if (!it) { $('sheet-export').innerHTML = ''; return; }
+  renderSheet($('sheet-export'), it.path, ex.isExample ? '<span class="tag example">example</span>' : '<span class="tag">Mouse Calc</span>', it.sheet, sheetNotes(it.sheet));
+}
+async function loadExportFiles(files) {
+  const items = []; let source = files.map(f => f.name).join(', '), problems = [];
+  for (const f of files) {
+    const bytes = await readBytes(f);
+    let opened = null;
+    try { opened = M.openImage(f.name, bytes); } catch (e) { opened = null; }
+    if (opened) {
+      if (opened.extra && opened.extra.missing) problems.push(f.name + ': ' + opened.extra.missing + ' sectors could not be read from the WOZ image');
+      for (const e of opened.walk()) {
+        if (e.st > 3) continue;
+        const data = opened.read(e);
+        if (e.type !== 0xf8 && !(e.type === 0x06 && false)) continue;
+        try { items.push({ path: e.path, sheet: M.parseFile(data) }); } catch (err) { problems.push(e.path + ': ' + err.message); }
+      }
+      source = (files.length > 1 ? source : f.name) + ' · /' + opened.name;
+    } else {
+      try { items.push({ path: f.name.replace(/#[0-9a-f]{6}$/i, ''), sheet: M.parseFile(bytes) }); }
+      catch (err) { problems.push(f.name + ' is not a disk image or Mouse Calc file (' + err.message + ')'); }
+    }
+  }
+  if (!items.length) { toast(problems[0] || 'No Mouse Calc sheets found.'); return; }
+  Object.assign(ex, { source, items, current: 0, isExample: false });
+  showExportList(); showExportSheet();
+  if (problems.length) toast(problems[0]);
+}
+dropzone('drop-export', 'in-export', loadExportFiles);
+const baseName = p => p.split('/').pop().replace(/[^A-Za-z0-9._-]+/g, '_');
+$('btn-xlsx').onclick = () => { const it = ex.items[ex.current]; offer(baseName(it.path) + '.xlsx', new Blob([X.workbook([{ name: it.path.split('/').pop(), sheet: it.sheet }])])); };
+$('btn-csv').onclick = () => { const it = ex.items[ex.current]; offer(baseName(it.path) + '.csv', new Blob([X.csv(it.sheet)])); };
+$('btn-all').onclick = () => { const name = (ex.source.split(' · /')[1] || 'MouseCalc').replace(/[^A-Za-z0-9._-]+/g, '_'); offer(name + '_sheets.xlsx', new Blob([X.workbook(ex.items.map(it => ({ name: it.path.split('/').pop(), sheet: it.sheet })))])); };
+
+// example content at rest
+(function () {
+  const items = Object.keys(EXAMPLES).map(k => ({ path: k, sheet: M.parseFile(b64(EXAMPLES[k])) }));
+  Object.assign(ex, { source: 'Mouse Calc samples disk', items, current: 0, isExample: true });
+  showExportList(); showExportSheet();
+})();
+
+// =============== IMPORT SIDE ===============
+const im = { wb: null, fileName: '', result: null, built: null, disk: null, diskName: '' };
+function prodosName(s) {
+  let n = String(s).replace(/\.[^.]*$/, '').toUpperCase().replace(/[^A-Z0-9.]+/g, '.').replace(/^[^A-Z]+/, '').replace(/\.+/g, '.').replace(/\.$/, '');
+  return (n || 'SHEET').slice(0, 15);
+}
+function convertImport() {
+  if (!im.wb) return;
+  const ws = im.wb.Sheets[$('sheetpick').value || im.wb.SheetNames[0]];
+  if (!ws) return;
+  const res = I.fromWorksheet(ws, XLSX);
+  let file, sheet;
+  try { file = M.buildFile(res.sheet); sheet = M.parseFile(file); }
+  catch (e) { toast('Could not build the Mouse Calc file: ' + e.message); return; }
+  im.result = res; im.built = file;
+  const s = res.stats;
+  let notes = '<div class="note ok">' + s.cells + ' cells converted · ' + s.formulas + ' live formulas' + (s.valuesOnly ? ' · ' + s.valuesOnly + ' formula(s) kept as values' : '') + ' · ' + file.length.toLocaleString() + ' bytes</div>';
+  if (res.warn.length) notes += '<div class="note">Check these cells:<ul>' + res.warn.map(w => '<li>' + esc(w) + '</li>').join('') + '</ul></div>';
+  if (!s.cells) notes += '<div class="note">This sheet has no cells to convert.</div>';
+  renderSheet($('sheet-import'), $('pname').value || 'SHEET', '<span class="tag">as Mouse Calc will show it</span>', sheet, notes);
+  updateDiskBtn();
+}
+async function loadWorkbook(files) {
+  const f = files[0];
+  if (typeof XLSX === 'undefined') { toast('The spreadsheet reader did not load. Check your internet connection and reload.'); return; }
+  try {
+    const bytes = await readBytes(f);
+    im.wb = XLSX.read(bytes, { type: 'array', cellFormula: true, cellNF: true, cellText: true, cellStyles: true, cellDates: false });
+  } catch (e) { toast('Could not read ' + f.name + ': ' + e.message); return; }
+  im.fileName = f.name;
+  const sp = $('sheetpick'); sp.innerHTML = im.wb.SheetNames.map(n => '<option>' + esc(n) + '</option>').join('');
+  $('sheetpick-wrap').hidden = im.wb.SheetNames.length < 2;
+  $('pname').value = prodosName(im.wb.SheetNames.length > 1 ? im.wb.SheetNames[0] : f.name);
+  convertImport();
+}
+dropzone('drop-import', 'in-import', loadWorkbook);
+$('sheetpick').onchange = () => { $('pname').value = prodosName($('sheetpick').value); convertImport(); };
+$('pname').addEventListener('input', () => { const v = $('pname').value.toUpperCase(); if (v !== $('pname').value) $('pname').value = v; updateDiskBtn(); const t = document.querySelector('#sheet-import .src-title'); if (t && t.firstChild) t.firstChild.textContent = (v || 'SHEET') + ' '; });
+const validName = n => /^[A-Z][A-Z0-9.]{0,14}$/.test(n);
+
+$('btn-mcfile').onclick = () => {
+  if (!im.built) { toast('Open a spreadsheet first.'); return; }
+  const n = $('pname').value.trim().toUpperCase();
+  if (!validName(n)) { toast('Use 1–15 letters, digits or dots, starting with a letter.'); $('pname').focus(); return; }
+  const readme = 'Mouse Calc sheet "' + n + '" converted from ' + im.fileName + '.\r\n\r\n' + n + '#f80000 is ProDOS file type $F8 (Mouse Calc), aux $0000.\r\nAdd it to a ProDOS disk with CiderPress II, keeping the file type from the #f80000 ending,\r\nthen open it from Mouse Calc with File > Open.\r\n';
+  offer(n + '.zip', new Blob([X.zip([[n + '#f80000', im.built], ['README.txt', new TextEncoder().encode(readme)]])]));
+};
+dropzone('drop-disk', 'in-disk', async files => {
+  const f = files[0];
+  try { im.disk = M.openImage(f.name, await readBytes(f)); } catch (e) { toast(f.name + ': ' + e.message); return; }
+  im.diskName = f.name;
+  $('disk-label').textContent = f.name + ' · /' + im.disk.name;
+  const dirs = [{ path: '/' + im.disk.name, key: 2 }].concat(im.disk.walk().filter(e => e.st === 0xd).map(e => ({ path: '/' + im.disk.name + '/' + e.path, key: e.key })));
+  const mcDir = im.disk.walk().find(e => e.type === 0xf8);
+  const pref = dirs.slice(1).find(d => /MOUSE|CALC/i.test(d.path.split('/').pop())) || (mcDir ? dirs.find(d => d.path === '/' + im.disk.name + '/' + mcDir.path.split('/').slice(0, -1).join('/')) : null) || dirs[0];
+  $('folder').innerHTML = dirs.map(d => '<option value="' + d.key + '"' + (d === pref ? ' selected' : '') + '>' + esc(d.path) + '</option>').join('');
+  $('folder-wrap').hidden = false; $('replace-wrap').hidden = false;
+  updateDiskBtn();
+});
+function updateDiskBtn() { $('btn-disk').disabled = !(im.disk && im.built); }
+$('btn-disk').onclick = () => {
+  const n = $('pname').value.trim().toUpperCase();
+  if (!validName(n)) { toast('Use 1–15 letters, digits or dots, starting with a letter.'); $('pname').focus(); return; }
+  // work on a copy so a failed write never touches the loaded image
+  const v = M.openImage(im.diskName, im.disk.toBytes());
+  try { v.writeFile(+$('folder').value, n, im.built, 0xf8, 0, $('replace').checked); }
+  catch (e) { toast(e.message + (/exists/.test(e.message) ? ' Tick “Replace” or choose another name.' : '')); return; }
+  im.disk = v;   // keep adding to the same image
+  const outName = im.kindName = im.diskName.replace(/\.woz$/i, '.po');
+  offer(outName.replace(/\.[^.]+$/, '') + '.zip', new Blob([X.zip([[outName, v.toBytes()]])]));
+  toast('Added ' + n + ' to ' + $('folder').selectedOptions[0].textContent);
+};
+
+// placeholder state for the import preview
+$('sheet-import').innerHTML = '<div class="sheethead"><div class="src-title">No spreadsheet yet</div></div><div class="notes"><div class="note ok">Open an .xlsx, .ods or .csv file. The preview shows the sheet as Mouse Calc will display it, with any cells that need checking listed underneath.</div></div>';
+
+// =============== FORMULA TRANSLATOR ===============
+function translate() {
+  const src = $('tr-in').value;
+  try {
+    const ast = M.parseExcel(src); M.checkRefs(ast);
+    const toks = M.formulaTokens(ast), back = M.parseTokens(Uint8Array.from(toks));
+    $('tr-mc').innerHTML = '<small>Mouse Calc (left to right)</small>' + esc(M.toMouseCalc(back));
+    $('tr-back').innerHTML = '<small>Back to Excel</small>=' + esc(M.toExcel(back));
+  } catch (e) {
+    $('tr-mc').innerHTML = '<small>Mouse Calc</small>' + esc(e.message);
+    $('tr-back').innerHTML = '<small>Back to Excel</small>—';
+  }
+}
+$('tr-in').addEventListener('input', translate); translate();
+})();
+</script>

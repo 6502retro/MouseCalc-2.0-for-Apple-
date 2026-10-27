@@ -1,0 +1,1 @@
+[["wait", 40], ["move", 550, 300], ["wait", 2], ["menu", 290, 330, 8], ["click", 470, 246, 12], ["shot", "list"], ["click", 470, 278, 30], ["shot", "imported"], ["menu", 290, 348, 5], ["type", "RT"], ["key", "Enter", 20], ["dump", "imp_euro.po"]]

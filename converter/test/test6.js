@@ -1,0 +1,14 @@
+const M = require('./mclib.js'), I = require('./mcimport.js'), XLSX = require('xlsx'), fs = require('fs');
+M.setTemplateHeader(new Uint8Array(fs.readFileSync('samples/SAMPLE.BILL')));
+const wb = XLSX.read(fs.readFileSync('budget.xlsx'), { cellFormula: true, cellNF: true, cellText: true, cellStyles: true });
+const ws = wb.Sheets[wb.SheetNames[0]];
+const { sheet, warn, stats } = I.fromWorksheet(ws, XLSX);
+console.log(stats); warn.forEach(w => console.log('warn:', w));
+const file = M.buildFile(sheet);
+const back = M.parseFile(file);
+back.cells.filter(c => c.kind === 'formula').forEach(c => console.log(M.cellName(c.r, c.c), c.mc, '=', c.value));
+fs.writeFileSync('BUDGET.mc', file);
+const v = M.openImage('hdd.2mg', fs.readFileSync('hdd.2mg'));
+v.writeFile(v.walk().find(e => e.path === 'MOUSECALC').key, 'BUDGET', file, 0xf8, 0, true);
+fs.writeFileSync('test_budget.po', v.d);
+console.log('image ok', file.length);

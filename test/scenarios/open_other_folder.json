@@ -1,0 +1,1 @@
+[["wait", 70], ["move", 550, 300], ["wait", 2], ["menu", 290, 136, 12], ["shot", "open"], ["click", 470, 198, 12], ["shot", "up1"], ["click", 470, 230, 12], ["shot", "docs"], ["click", 470, 214, 30], ["shot", "loaded"], ["move", 815, 103], ["wait", 2], ["down"], ["wait", 5], ["move", 825, 290, 15], ["wait", 3], ["up"], ["wait", 20], ["click", 470, 311, 25], ["shot", "help"]]

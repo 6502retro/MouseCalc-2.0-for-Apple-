@@ -1,0 +1,10 @@
+SORT ROWS A-Z / Z-A
+===================
+Select the rows you want to sort (drag across them, or click a column letter
+to select every row), then select SORT ROWS.  Type the letter of the column to
+sort by, or press <RETURN> to use the leftmost selected column.  <ESC> cancels.
+Whole rows move together.  Numbers come first, smallest first, then text in
+alphabetical order; empty cells always go last.  Select SORT ROWS again on rows
+that are already in order to sort them Z-A instead.  Formulas in the sorted
+rows keep pointing at their own data.  A sort cannot be undone, so save your
+file first if you may want the old order back.

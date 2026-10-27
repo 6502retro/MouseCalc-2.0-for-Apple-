@@ -1,0 +1,1 @@
+[["wait", 60], ["shot", "start"], ["type", "HD"], ["wait", 2], ["oa", "KeyO", 8], ["shot", "hd"], ["type", "MCALC"], ["wait", 2], ["oa", "KeyO", 8], ["shot", "folder"], ["type", "MCALC.SYSTEM"], ["wait", 2], ["oa", "KeyO", 1], ["wait", 6], ["shot", "t1"], ["wait", 35], ["shot", "launched"]]

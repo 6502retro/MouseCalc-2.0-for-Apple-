@@ -1,0 +1,13 @@
+# copyrighted originals and everything built from them
+originals/*
+!originals/README.md
+build/
+out/
+# tooling
+converter/node_modules/
+converter/test/work/
+__pycache__/
+*.pyc
+*.o
+*.lst
+.DS_Store
