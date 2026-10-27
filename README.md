@@ -46,8 +46,8 @@ You need:
 * optional: **Node.js**, to generate the `SORT.DEMO` practice sheet.
 
 ```sh
-git clone https://github.com/<you>/mousecalc-v2.git
-cd mousecalc-v2
+git clone https://github.com/Adarjo6502/MouseCalc-2.0-for-Apple-.git
+cd MouseCalc-2.0-for-Apple-
 cp /path/to/"Mouse Calc - Program.woz" /path/to/"Mouse Calc - Samples.woz" originals/
 python3 build.py
 ```
