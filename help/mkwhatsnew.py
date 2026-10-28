@@ -31,7 +31,7 @@ p2 = [
 "  to open it.  File > Select volume also lists the disks.",
 "",
 "CSV FILES (File menu): Export CSV file / Import CSV file exchange sheets with",
-"  Excel, LibreOffice, Numbers and Google Sheets.  See FILE help, page 5.",
+"  Excel, LibreOffice, Numbers and Google Sheets.  See CSV help.",
 "  The Link menu is now the Sort menu; the DIF commands were removed.",
 ]
 pages = [p1, p2]; n = len(pages); out = []
@@ -45,4 +45,5 @@ for i, p in enumerate(pages):
     body += [''] * (23 - len(body))
     out.append('\r'.join(body + [nav]) + '  &')
 data = (str(n) + '\r' + '\r'.join(out)).encode('ascii')
+assert len(data) <= 3000, 'help file over 3,000 characters'
 open(sys.argv[1], 'wb').write(data); print(len(data))

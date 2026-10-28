@@ -6,7 +6,10 @@
 * CSV import and export on the File menu (replaces DIF), two-pass import that sizes the sheet once.
 * Sort menu (was Link) with *Sort rows A-Z / Z-A*; *Merge (+)* / *Merge (-)* kept.
 * "(Up a level)" label in the Open/Save file box; folders and disks reachable from it.
-* `HELP/SORT`, `HELP/WHATS.NEW`, CSV page in `HELP/FILE`.
+* `HELP/SORT`, `HELP/CSV`, `HELP/WHATS.NEW`.
+
+**Fixed after first release**
+* The CSV help was a fifth page of FILE help, but Mouse Calc only reads about 3,000 characters of a help file, so that page was cut off. CSV now has its own help page; FILE help is back to the original.
 * Info menu and start-up picture show *Version 2* and *Updated by 6502 Retro 2026*.
 * `SAMPLES/SORT.DEMO` practice sheet.
 * Offline PC converter page (Mouse Calc ↔ `.xlsx`/`.csv`).

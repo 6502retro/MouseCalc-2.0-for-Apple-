@@ -19,7 +19,7 @@ This repository contains **only new work**: 6502 source, patch scripts, tools an
 | **CSV import / export** | *File → Import CSV file* and *Export CSV file*. Standard RFC 4180 CSV that opens straight in Excel, LibreOffice, Numbers and Google Sheets — and reads files saved by them (UTF-8, semicolons, quoted text…). |
 | **Open/Save in any folder** | The file box now shows **(Up a level)**; click it to climb folders and, at the top of a disk, pick another disk. |
 | **Version 2 identity** | Info menu shows *Version 2* and *Updated by 6502 Retro 2026*; so does the start-up picture. |
-| **Help** | New *SORT* and *WHATS.NEW* help pages, CSV page in *FILE* help. |
+| **Help** | New *SORT*, *CSV* and *WHATS.NEW* help pages. |
 | **PC converter** | A single offline web page that converts Mouse Calc files to and from `.xlsx`/`.csv` on a PC ([converter/](converter/)). |
 
 The DIF commands (and the "Copy to Mouse Word" link to Version Soft's word processor) were removed to make room; CSV replaces DIF.

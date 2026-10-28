@@ -116,7 +116,8 @@ def main():
     USE_PREBUILT = '--prebuilt' in sys.argv or (not UPDATE_PREBUILT and not tool('ca65', False))
     prog_path, samp_path = find_inputs(args)
     shutil.rmtree(BUILD, ignore_errors=True); os.makedirs(BUILD)
-    os.makedirs(os.path.join(OUT, 'files'), exist_ok=True)
+    shutil.rmtree(os.path.join(OUT, 'files'), ignore_errors=True)
+    os.makedirs(os.path.join(OUT, 'files'))
 
     step('reading ' + os.path.basename(prog_path))
     prog = load_po(prog_path); P = tree(prodos.Vol(prog), 2)
@@ -171,7 +172,7 @@ def main():
         if f.name == 'HELP':
             for h in f.children:
                 if h.name == 'LINK': h.name = 'SORT'; h.data = rd('SORT')
-                elif h.name == 'FILE': h.data = rd('FILE')
+            f.children.append(F('CSV', rd('CSV'), 0x04, 0))
             f.children.append(F('WHATS.NEW', rd('WHATS.NEW'), 0x04, 0))
     i = next(k for k, f in enumerate(P) if f.name == 'DIF.SEGMENT')
     P[i] = F('CSV.SEGMENT', csvseg, 0x06, 0xAC00)
@@ -198,7 +199,7 @@ def main():
 
     step('loose files (out/files)')
     loose = {'MOUSE.CALC': mcalc, 'M.SYSTEM': msys_new, 'MCALC.SYSTEM': launcher, 'SORT.SEGMENT': sortseg,
-             'CSV.SEGMENT': csvseg, 'HELP_SORT': rd('SORT'), 'HELP_FILE': rd('FILE'), 'HELP_WHATS.NEW': rd('WHATS.NEW')}
+             'CSV.SEGMENT': csvseg, 'HELP_SORT': rd('SORT'), 'HELP_CSV': rd('CSV'), 'HELP_WHATS.NEW': rd('WHATS.NEW')}
     if demo: loose['SORT.DEMO'] = demo
     for n, b in loose.items(): open(os.path.join(OUT, 'files', n), 'wb').write(b)
 
